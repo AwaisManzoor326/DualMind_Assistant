@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+python-dotenv
+huggingface_hub
+chromadb
+sentence-transformers
+python-multipart
+pypdf
+python-docx
+requests
+jinja2
+httpx
+sqlmodel
+gunicorn
+
