@@ -8,6 +8,7 @@ function App() {
   const [files, setFiles] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [currentSessionId, setCurrentSessionId] = useState(null);
+  const [attachedDoc, setAttachedDoc] = useState(null);
 
   useEffect(() => {
     fetchSessions();
@@ -21,6 +22,12 @@ function App() {
         const data = await res.json();
         if (Array.isArray(data)) {
           setSessions(data);
+          // Update attached doc if current session is in the list and not manually set
+          if (currentSessionId && !attachedDoc) {
+            const current = data.find((s) => s.id === currentSessionId);
+            if (current && current.source_file)
+              setAttachedDoc(current.source_file);
+          }
         } else {
           console.error("Sessions API returned non-array:", data);
           setSessions([]);
@@ -40,7 +47,6 @@ function App() {
         const newSession = await res.json();
         setSessions([newSession, ...sessions]);
         setCurrentSessionId(newSession.id);
-        setIsRAG(false);
         return newSession; // Return for auto-save logic
       }
     } catch (e) {
@@ -51,6 +57,11 @@ function App() {
 
   const handleSelectSession = (id) => {
     setCurrentSessionId(id);
+    const session = sessions.find((s) => s.id === id);
+    if (session) {
+      setAttachedDoc(session.source_file);
+      setIsRAG(!!session.source_file);
+    }
   };
 
   const handleDeleteSession = async (e, id) => {
@@ -67,9 +78,12 @@ function App() {
 
   // Auto-switch to RAG mode when a file is uploaded successfully
   const handleFileUpload = (newFile) => {
-    setFiles((prev) => [...prev, newFile]);
     if (newFile.status === "success") {
+      setFiles((prev) => [...prev, newFile]);
       setIsRAG(true);
+      setAttachedDoc(newFile.name);
+    } else {
+      setFiles((prev) => [...prev, newFile]);
     }
   };
 
@@ -96,6 +110,8 @@ function App() {
           sessionId={currentSessionId}
           onNewSession={handleNewSession}
           onSessionUpdate={fetchSessions}
+          attachedDoc={attachedDoc}
+          setAttachedDoc={setAttachedDoc}
         />
       </main>
     </div>

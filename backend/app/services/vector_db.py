@@ -18,24 +18,28 @@ class VectorDBService:
             name="dualmind_docs",
             embedding_function=self.embedding_fn
         )
+        print(f"DEBUG: VectorDB initialized. Current collection count: {self.collection.count()}")
 
     def add_documents(self, documents: list, metadatas: list, ids: list):
         """
         Adds documents to the ChromaDB collection.
         """
+        print(f"DEBUG: Adding {len(documents)} docs to collection.")
         self.collection.add(
             documents=documents,
             metadatas=metadatas,
             ids=ids
         )
+        print(f"DEBUG: Addition complete. New collection count: {self.collection.count()}")
 
-    def query(self, query_text: str, n_results: int = 5):
+    def query(self, query_text: str, n_results: int = 5, where: dict = None):
         """
-        Queries the collection for similar documents.
+        Queries the collection for similar documents with optional filtering.
         """
         results = self.collection.query(
             query_texts=[query_text],
-            n_results=n_results
+            n_results=n_results,
+            where=where
         )
         return results
 

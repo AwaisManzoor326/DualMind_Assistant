@@ -16,6 +16,7 @@ class ChatRequest(BaseModel):
     model: str = "qwen"
     use_rag: bool = False
     session_id: Optional[int] = None
+    source_file: Optional[str] = None
 
 # --- Session Management Endpoints ---
 
@@ -74,8 +75,12 @@ async def generate_title(session_id: int):
             prompt = f"Summarize the following conversation into a very short title (max 5 words). Do not use quotes.\n\n{context}\n\nTitle:"
             
             title = await llm_service.generate_response(prompt, max_new_tokens=20)
-            title = title.strip().strip('"').strip("'")
+            # Clean up the title
+            title = title.replace("Title:", "").replace("title:", "").strip().strip('"').strip("'").strip()
             
+            if len(title) > 50: # safety cap
+                title = title[:47] + "..."
+                
             chat_session.title = title
             session.add(chat_session)
             session.commit()
@@ -85,15 +90,26 @@ async def generate_title(session_id: int):
 
 @router.post("/stream")
 async def chat_stream_endpoint(request: ChatRequest, background_tasks: BackgroundTasks):
+    print(f"DEBUG: Chat request: {request.dict()}")
     try:
-        # Ensure session exists or create one if missing (optional logic, usually frontend provides ID)
-        if not request.session_id:
-             pass
-        
+        # 0. Sync source_file with session
+        if request.session_id and request.source_file:
+            with Session(engine) as session:
+                chat_session = session.get(ChatSession, request.session_id)
+                if chat_session and chat_session.source_file != request.source_file:
+                    chat_session.source_file = request.source_file
+                    session.add(chat_session)
+                    session.commit()
+
         # 1. Retrieve History for specific session
         history_context = ""
         if request.session_id:
             with Session(engine) as session:
+                # Also check which source_file is assigned to the session if not in request
+                if not request.source_file:
+                    chat_session = session.get(ChatSession, request.session_id)
+                    if chat_session:
+                        request.source_file = chat_session.source_file
                 statement = select(Message).where(Message.session_id == request.session_id).order_by(Message.timestamp.desc()).limit(10)
                 messages = session.exec(statement).all()
                 for msg in messages[::-1]: # Oldest first
@@ -112,7 +128,7 @@ async def chat_stream_endpoint(request: ChatRequest, background_tasks: Backgroun
         context = ""
         rag_chunks_count = 0
         if request.use_rag:
-            results = rag_service.search(request.message, k=3)
+            results = rag_service.search(request.message, k=3, source=request.source_file)
             if results:
                 rag_chunks_count = len(results)
                 context = "\n\n".join([r['content'] for r in results])

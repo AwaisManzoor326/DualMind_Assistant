@@ -46,7 +46,11 @@ const Sidebar = ({
 
       if (response.ok) {
         const data = await response.json();
-        onFileUpload({ name: data.filename, status: "success" });
+        onFileUpload({
+          name: data.filename,
+          status: "success",
+          chunks: data.chunks,
+        });
       } else {
         onFileUpload({ name: file.name, status: "error" });
       }
@@ -176,6 +180,11 @@ const Sidebar = ({
                       className="text-muted group-hover:text-blue-400"
                     />
                     <span className="truncate flex-1">{file.name}</span>
+                    {file.chunks !== undefined && (
+                      <span className="text-[10px] bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded border border-slate-700">
+                        {file.chunks} chunks
+                      </span>
+                    )}
                     {file.status === "success" ? (
                       <CheckCircle size={14} className="text-emerald-500" />
                     ) : (

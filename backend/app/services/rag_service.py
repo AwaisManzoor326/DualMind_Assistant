@@ -57,6 +57,10 @@ class RAGService:
         else:
             content = self.read_text(file_path)
             
+        if not content or not content.strip():
+            print(f"DEBUG: WARNING - Extracted content for {filename} is empty!")
+            return {"chunks_processed": 0, "ids": []}
+
         chunks = self.chunk_text(content)
         
         ids = [str(uuid.uuid4()) for _ in chunks]
@@ -64,15 +68,20 @@ class RAGService:
         
         # Add to Vector DB
         # Note: Embedding happens inside vector_db.add_documents via the embedding function
+        print(f"DEBUG: Adding {len(chunks)} chunks to Vector DB for file: {filename}")
         vector_db.add_documents(documents=chunks, metadatas=metadatas, ids=ids)
         
         return {"chunks_processed": len(chunks), "ids": ids}
 
-    def search(self, query: str, k: int = 3):
+    def search(self, query: str, k: int = 3, source: str = None):
         """
-        Searches for relevant context.
+        Searches for relevant context with optional source filtering.
         """
-        results = vector_db.query(query, n_results=k)
+        print(f"DEBUG: Searching for: {query} (Source: {source})")
+        
+        where_filter = {"source": source} if source else None
+        results = vector_db.query(query, n_results=k, where=where_filter)
+        print(f"DEBUG: Chroma query results: {results}")
         
         # Format results
         # Chroma returns lists of lists (one list per query)

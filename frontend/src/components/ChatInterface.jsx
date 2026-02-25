@@ -8,6 +8,7 @@ import {
   Volume2,
   VolumeX,
   StopCircle,
+  X,
 } from "lucide-react";
 import AnalyticsDashboard from "./AnalyticsDashboard";
 import ReactMarkdown from "react-markdown";
@@ -19,6 +20,8 @@ const ChatInterface = ({
   sessionId,
   onNewSession,
   onSessionUpdate,
+  attachedDoc,
+  setAttachedDoc,
 }) => {
   const [messages, setMessages] = useState([
     {
@@ -149,6 +152,7 @@ const ChatInterface = ({
           model: selectedModel,
           use_rag: isRAG,
           session_id: activeSessionId,
+          source_file: attachedDoc,
         }),
       });
 
@@ -376,35 +380,53 @@ const ChatInterface = ({
 
       {/* Input Area */}
       <div className="p-4 border-t border-slate-800 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="max-w-4xl mx-auto relative">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder={isListening ? "Listening..." : "Message DualMind..."}
-            className={`w-full bg-secondary/50 border hover:border-slate-600 focus:border-accent rounded-xl py-3.5 pl-4 pr-32 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-accent transition-all shadow-sm text-sm ${isListening ? "border-red-500/50 ring-1 ring-red-500/20" : "border-slate-700"}`}
-            disabled={isLoading}
-          />
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-            <button
-              onClick={handleMicClick}
-              className={`p-2 rounded-lg transition-colors ${isListening ? "text-red-500 bg-red-500/10 animate-pulse" : "text-muted hover:text-white hover:bg-slate-700"}`}
-              title="Voice Input"
-            >
-              {isListening ? <StopCircle size={18} /> : <Mic size={18} />}
-            </button>
-            <button
-              onClick={handleSend}
-              disabled={!input.trim() || isLoading}
-              className={`p-2 rounded-lg transition-all ${input.trim() && !isLoading ? "bg-accent text-white shadow-md hover:bg-accent-hover" : "bg-transparent text-slate-600 cursor-not-allowed"}`}
-            >
-              <Send size={18} />
-            </button>
+        <div className="max-w-4xl mx-auto">
+          {/* Attached Document Indicator - Moved outside the relative div */}
+          {attachedDoc && (
+            <div className="flex items-center gap-2 mb-2 p-2 bg-secondary/80 border border-slate-700 rounded-lg w-fit animate-in slide-in-from-bottom-2">
+              <div className="p-1 px-2 bg-accent/20 text-accent rounded text-[10px] font-bold uppercase">
+                RAG SOURCE
+              </div>
+              <span className="text-sm text-slate-300 truncate max-w-[200px]">
+                {attachedDoc}
+              </span>
+              <button
+                onClick={() => setAttachedDoc(null)}
+                className="p-1 hover:bg-slate-700 rounded-full text-slate-500 hover:text-rose-400 transition-colors"
+                title="Remove document"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
+          <div className="relative">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSend()}
+              placeholder={isListening ? "Listening..." : "Message DualMind..."}
+              className={`w-full bg-secondary/50 border hover:border-slate-600 focus:border-accent rounded-xl py-3.5 pl-4 pr-32 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-accent transition-all shadow-sm text-sm ${isListening ? "border-red-500/50 ring-1 ring-red-500/20" : "border-slate-700"}`}
+              disabled={isLoading}
+            />
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              <button
+                onClick={handleMicClick}
+                className={`p-2 rounded-lg transition-colors ${isListening ? "text-red-500 bg-red-500/10 animate-pulse" : "text-muted hover:text-white hover:bg-slate-700"}`}
+                title="Voice Input"
+              >
+                {isListening ? <StopCircle size={18} /> : <Mic size={18} />}
+              </button>
+              <button
+                onClick={handleSend}
+                disabled={!input.trim() || isLoading}
+                className={`p-2 rounded-lg transition-all ${input.trim() && !isLoading ? "bg-accent text-white shadow-md hover:bg-accent-hover" : "bg-transparent text-slate-600 cursor-not-allowed"}`}
+              >
+                <Send size={18} />
+              </button>
+            </div>
           </div>
-        </div>
-        <div className="text-center mt-2 text-[10px] text-muted uppercase tracking-widest opacity-60">
-          AI agent powered by Hugging Face
         </div>
       </div>
     </div>
